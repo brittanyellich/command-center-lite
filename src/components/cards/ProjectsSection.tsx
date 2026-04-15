@@ -8,6 +8,7 @@ export function ProjectsSection() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const loadProjects = useCallback(async () => {
     if (!isElectron() || !window.electronAPI) {
@@ -18,8 +19,10 @@ export function ProjectsSection() {
     try {
       const items = await window.electronAPI.db.projects.getAll()
       setProjects(items)
-    } catch (error) {
-      console.error('Error loading projects:', error)
+      setError(null)
+    } catch (err) {
+      console.error('Error loading projects:', err)
+      setError('Failed to load projects')
     } finally {
       setIsLoading(false)
     }
@@ -32,29 +35,46 @@ export function ProjectsSection() {
   const handleAddProject = async (data: { title: string; status: ProjectStatus; notes?: string }) => {
     if (!isElectron() || !window.electronAPI) return
 
-    await window.electronAPI.db.projects.create(data)
-    await loadProjects()
+    try {
+      await window.electronAPI.db.projects.create(data)
+      await loadProjects()
+    } catch (err) {
+      console.error('Error creating project:', err)
+      throw err
+    }
   }
 
   const handleUpdateStatus = async (id: string, status: ProjectStatus) => {
     if (!isElectron() || !window.electronAPI) return
 
-    await window.electronAPI.db.projects.update(id, { status })
-    await loadProjects()
+    try {
+      await window.electronAPI.db.projects.update(id, { status })
+      await loadProjects()
+    } catch (err) {
+      console.error('Error updating project status:', err)
+    }
   }
 
   const handleUpdateNotes = async (id: string, notes: string) => {
     if (!isElectron() || !window.electronAPI) return
 
-    await window.electronAPI.db.projects.update(id, { notes })
-    await loadProjects()
+    try {
+      await window.electronAPI.db.projects.update(id, { notes })
+      await loadProjects()
+    } catch (err) {
+      console.error('Error updating project notes:', err)
+    }
   }
 
   const handleDelete = async (id: string) => {
     if (!isElectron() || !window.electronAPI) return
 
-    await window.electronAPI.db.projects.delete(id)
-    await loadProjects()
+    try {
+      await window.electronAPI.db.projects.delete(id)
+      await loadProjects()
+    } catch (err) {
+      console.error('Error deleting project:', err)
+    }
   }
 
   // Group projects by status
@@ -95,8 +115,15 @@ export function ProjectsSection() {
         </button>
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="bg-red/20 text-red px-3 py-2 rounded-lg text-sm mb-4">
+          {error}
+        </div>
+      )}
+
       {/* Empty state */}
-      {projects.length === 0 && (
+      {projects.length === 0 && !error && (
         <div className="text-center py-8">
           <p className="text-overlay1 text-sm">No projects yet.</p>
           <p className="text-overlay0 text-xs mt-1">Capture your next idea to get started.</p>

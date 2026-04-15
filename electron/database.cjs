@@ -182,6 +182,19 @@ function initDatabase() {
 
     -- Index for blocked meeting patterns
     CREATE INDEX IF NOT EXISTS idx_blocked_patterns_pattern ON blocked_meeting_patterns(pattern);
+
+    -- Project items
+    CREATE TABLE IF NOT EXISTS project_items (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      status TEXT DEFAULT 'idea' CHECK(status IN ('idea', 'in-progress', 'completed')),
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Index for project items
+    CREATE INDEX IF NOT EXISTS idx_project_items_status ON project_items(status);
   `);
   
   // Run migrations to add new columns to existing tables
@@ -1408,6 +1421,71 @@ function getSubtaskSummaries(taskIds) {
 }
 
 // ============================================
+// PROJECT ITEMS CRUD
+// ============================================
+
+function createProjectItem(input) {
+  const db = getDb();
+  const id = generateId();
+  const now = new Date().toISOString();
+  
+  db.prepare(`
+    INSERT INTO project_items (id, title, status, notes, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, input.title, input.status || 'idea', input.notes || null, now, now);
+  
+  return getProjectItemById(id);
+}
+
+function getProjectItemById(id) {
+  const db = getDb();
+  return db.prepare(`
+    SELECT id, title, status, notes, created_at as createdAt, updated_at as updatedAt
+    FROM project_items WHERE id = ?
+  `).get(id);
+}
+
+function getAllProjectItems(filters = {}) {
+  const db = getDb();
+  let query = 'SELECT id, title, status, notes, created_at as createdAt, updated_at as updatedAt FROM project_items';
+  const params = [];
+  
+  if (filters.status) {
+    query += ' WHERE status = ?';
+    params.push(filters.status);
+  }
+  
+  query += ' ORDER BY created_at DESC';
+  
+  return db.prepare(query).all(...params);
+}
+
+function updateProjectItem(id, updates) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const fields = [];
+  const values = [];
+  
+  if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
+  if (updates.status !== undefined) { fields.push('status = ?'); values.push(updates.status); }
+  if (updates.notes !== undefined) { fields.push('notes = ?'); values.push(updates.notes); }
+  
+  fields.push('updated_at = ?');
+  values.push(now);
+  values.push(id);
+  
+  db.prepare(`UPDATE project_items SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  
+  return getProjectItemById(id);
+}
+
+function deleteProjectItem(id) {
+  const db = getDb();
+  const result = db.prepare('DELETE FROM project_items WHERE id = ?').run(id);
+  return result.changes > 0;
+}
+
+// ============================================
 // SEED DATA (for initial setup)
 // ============================================
 
@@ -1531,6 +1609,13 @@ module.exports = {
   getWeeklyMetrics,
   getRecentWeeklyMetrics,
   computeWeeklyMetrics,
+  
+  // Project items
+  createProjectItem,
+  getProjectItemById,
+  getAllProjectItems,
+  updateProjectItem,
+  deleteProjectItem,
   
   // Setup
   seedInitialData,

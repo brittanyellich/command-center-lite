@@ -2,6 +2,18 @@
 export type TaskCategory = 'work' | 'home' | 'personal' | 'side-project';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
+// Project types
+export type ProjectStatus = 'idea' | 'in-progress' | 'completed';
+
+export interface ProjectItem {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Goal types
 export type GoalLevel = 'annual' | 'seasonal' | 'monthly' | 'weekly';
 export type GoalStatus = 'active' | 'completed' | 'abandoned';

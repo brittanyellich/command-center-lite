@@ -6,7 +6,7 @@
  */
 
 import { isElectron } from './electron'
-import type { Task, Meeting, DailyLog } from '../types'
+import type { Task, Meeting, DailyLog, ProjectItem, ProjectStatus } from '../types'
 
 // Database API type definition
 interface DatabaseAPI {
@@ -39,6 +39,13 @@ interface DatabaseAPI {
   sync?: {
     getStatus: (source: string) => Promise<SyncStatus | null>
     updateStatus: (source: string, status: string, error?: string) => Promise<SyncStatus>
+  }
+  projects: {
+    create: (input: { title: string; status?: ProjectStatus; notes?: string }) => Promise<ProjectItem>
+    getById: (id: string) => Promise<ProjectItem | null>
+    getAll: (filters?: { status?: ProjectStatus }) => Promise<ProjectItem[]>
+    update: (id: string, updates: Partial<Pick<ProjectItem, 'title' | 'status' | 'notes'>>) => Promise<ProjectItem | null>
+    delete: (id: string) => Promise<boolean>
   }
 }
 
@@ -204,6 +211,42 @@ export const sync = {
     const db = getDbApi()
     if (!db || !db.sync) return null
     return db.sync.updateStatus(source, status, error)
+  },
+}
+
+// ============================================
+// PROJECTS
+// ============================================
+
+export const projects = {
+  async getAll(filters?: { status?: ProjectStatus }): Promise<ProjectItem[]> {
+    const db = getDbApi()
+    if (!db) return []
+    return db.projects.getAll(filters)
+  },
+
+  async getById(id: string): Promise<ProjectItem | null> {
+    const db = getDbApi()
+    if (!db) return null
+    return db.projects.getById(id)
+  },
+
+  async create(input: { title: string; status?: ProjectStatus; notes?: string }): Promise<ProjectItem | null> {
+    const db = getDbApi()
+    if (!db) return null
+    return db.projects.create(input)
+  },
+
+  async update(id: string, updates: Partial<Pick<ProjectItem, 'title' | 'status' | 'notes'>>): Promise<ProjectItem | null> {
+    const db = getDbApi()
+    if (!db) return null
+    return db.projects.update(id, updates)
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const db = getDbApi()
+    if (!db) return false
+    return db.projects.delete(id)
   },
 }
 

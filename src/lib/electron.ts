@@ -13,6 +13,8 @@ import type {
   WeeklyMetrics,
   Subtask,
   SubtaskSummary,
+  ProjectItem,
+  ProjectStatus,
 } from '../types'
 
 // GitHub types
@@ -134,6 +136,13 @@ export interface ElectronAPI {
       get: (year: number, week: number) => Promise<WeeklyMetrics | null>
       getRecent: (numWeeks?: number) => Promise<WeeklyMetrics[]>
       compute: (year: number, week: number) => Promise<WeeklyMetrics>
+    }
+    projects: {
+      create: (input: { title: string; status?: ProjectStatus; notes?: string }) => Promise<ProjectItem>
+      getById: (id: string) => Promise<ProjectItem | null>
+      getAll: (filters?: { status?: ProjectStatus }) => Promise<ProjectItem[]>
+      update: (id: string, updates: Partial<Pick<ProjectItem, 'title' | 'status' | 'notes'>>) => Promise<ProjectItem | null>
+      delete: (id: string) => Promise<boolean>
     }
   }
   openExternal: (url: string) => Promise<void>

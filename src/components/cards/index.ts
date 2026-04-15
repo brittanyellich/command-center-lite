@@ -1,3 +1,5 @@
 export { MorningBriefing } from './MorningBriefing'
 export { Meetings } from './Meetings'
 export { TaskList } from './TaskList'
+export { ProjectsSection } from './ProjectsSection'
+export { ProjectItemCard } from './ProjectItemCard'
